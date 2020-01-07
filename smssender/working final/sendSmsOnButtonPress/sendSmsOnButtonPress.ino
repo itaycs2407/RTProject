@@ -1,4 +1,9 @@
 #include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+// LCD settings.
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
 int buttonState = 0; // variable for reading the pushbutton status
 int toggle = 0;
 int counter = 1;
@@ -9,20 +14,37 @@ SoftwareSerial Sim900Serial(2, 3);
 
 void setup()
 {
+    //lcd setup
+    lcd.begin(16, 2);
+    lcd.setCursor(0, 0);
+    lcd.print("Initialising.");
+    delay(1000);
+    lcd.clear();
+    
+    
+    
   // sms moudle setup:
   Sim900Serial.begin(115200); // the GPRS baud rate
   delay(500);
   Sim900Serial.println("AT+IPR=19200");
   delay(500);
+  lcd.print("Initialising..");
+  delay(1000);
+  lcd.clear();
   Sim900Serial.begin(19200); // the GPRS baud rate
   delay(1000);
   Serial.begin(9600); // the Hardware serial rate
-  //Serial.println("Please type 's' to send  SMS");
-
+ 
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
+  lcd.print("Initialising...");
+  delay(1000);
+  lcd.clear();
+  delay(1000);
+  lcd.print("Standby Mode..");
+  
 }
 
 void loop()
@@ -38,7 +60,7 @@ void loop()
     {
       Serial.println("the button pressed, sending sms...." + String(counter));
       String tempMsg = "this is message number " + String(counter);
-      SendMessageToScreen("message typed to screen");
+      SendMessageToScreen("sms #" + String(counter));
       SendTextMessage(tempMsg, PHONE);
       counter++;
     }
@@ -53,6 +75,14 @@ void loop()
     digitalWrite(ledPin, LOW);
   }
 }
+
+void SendMessageToScreen(String msg)
+{
+  // clear the screen
+  lcd.clear();
+  // send the message to the screen
+  lcd.println(msg);
+}
 void SendTextMessage(String msg, String phoneNumber)
 {
   Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
@@ -64,12 +94,4 @@ void SendTextMessage(String msg, String phoneNumber)
   Sim900Serial.println((char)26); //the ASCII code of the ctrl+z is 26
   delay(100);
   Sim900Serial.println();
-}
-
-void SendMessageToScreen(Strign msg)
-{
-  // clear the screen
-
-  // send the message to the screen
-  Serial.println(msg);
 }
