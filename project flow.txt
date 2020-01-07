@@ -1,0 +1,38 @@
+// is viacle shut ?
+in loop -:
+    read car shutdown
+read wight sensor
+if car + wight true:
+    delay 20000
+flag = true
+delaycounter = 20000
+while flag {
+    send sms
+    delay 1000
+    delaycounter += 1000
+    if sms recived {
+        flag = false
+    } else {
+        send sms
+        daly 30000
+        delaycounter += 30000
+    }
+    if daly counter > 120000
+    semdgpssmsg
+}
+// function :
+writemassagelog(string)
+check sms
+send sms primary
+send sms secondry0
+send sms SOS
+activate horn
+downwindows
+getgpscor
+send result time
+send
+send smsgps msg:
+    activate leds {
+        getgpscor
+        send sms
+    }
