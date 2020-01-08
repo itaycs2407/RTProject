@@ -1,0 +1,35 @@
+[33mcommit 6fe1a59f70b3020e07cd5f072d9304f38c37d73e[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/feature/LCDScreen[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mfeature/LCDScreen[m[33m)[m
+Author: Itay Cohen <itaycs2407@gmail.com>
+Date:   Tue Jan 7 23:06:57 2020 +0200
+
+    finish integrat with lcd moudule
+
+[33mcommit a06200c0d5a2c545dc708bd6f1b68849f6130b79[m
+Author: Itay Cohen <itaycs2407@gmail.com>
+Date:   Tue Jan 7 22:50:06 2020 +0200
+
+    working lcd moudule
+
+[33mcommit 84baa40378c3d085c48a21dbf4c9c9cc209caf30[m
+Author: Itay Cohen <itaycs2407@gmail.com>
+Date:   Tue Jan 7 22:10:43 2020 +0200
+
+    starting working on lcd module
+
+[33mcommit d1b7de2ceac36da1ba272b44c6ce90c391b80d55[m
+Author: Itay Cohen <itaycs2407@gmail.com>
+Date:   Tue Jan 7 22:05:28 2020 +0200
+
+    initial files
+
+[33mcommit 96790251042582b0189ac2ef9465278834d1964c[m
+Author: itaycs2407 <50486017+itaycs2407@users.noreply.github.com>
+Date:   Tue Jan 7 22:03:27 2020 +0200
+
+    Delete README.md
+
+[33mcommit bc1e3799653019fabad828560d6b6a8e4e51f107[m
+Author: itaycs2407 <50486017+itaycs2407@users.noreply.github.com>
+Date:   Mon Dec 23 17:59:12 2019 +0200
+
+    Initial commit
