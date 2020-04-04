@@ -13,14 +13,17 @@ SoftwareSerial Sim900Serial(2, 3);
 const int timeToTakeChildrenOutFromTheCar = 5000; // 3 sec
 const String PHONE = "972587600202";
 const int carIsOnPin = 10;
+const long waitingForAnswerTime = 10000;
 int ledPin = 13;
 int actionNumber = 1;
 int msgCounter = 1;
 String tempMsgToSMS = "";
 String tempMsgToScreen = "";
-unsigned long time;
-
+unsigned long currentMillis = 0;
+unsigned long startOfWaitingTime = 0;
+bool childrenTrapped = true;
 bool answerFromParent = false;
+String smsAnswer = "";
 
 
 
@@ -60,7 +63,7 @@ void setup() {
   //Serial.println("waited time to take children out of the car");
   SendMessageToScreen            ("Children         ", 0, 0);
   SendMessageToScreenWithOutClear("detected         ", 1, 0);
-  answerFromParent = false;
+
 
   /*
     check for child in the seat :
@@ -68,7 +71,7 @@ void setup() {
     if yes, start the logic
   */
 
-  while (!answerFromParent) {
+  while (childrenTrapped) {
     /*
       logic to decide what sms to send
     */
@@ -79,88 +82,114 @@ void setup() {
     delay(2000);
     //SendTextMessage(tempMsgToSMS, PHONE);
     SendMessageToScreen(tempMsgToScreen, 0, 0);
-    
-
+    startOfWaitingTime = millis();
     /*
       while loop tho wait for answer from parent
       if got answer = change answerFromParent state to true
       else continue
 
     */
+/*
+    while (!answerFromParent) {
+      // waiting for answer logic - wait for the sms to come
+      smsAnswer = getSMS();
+      if (SMSValidation(smsAnswer) == true) {
+        answerFromParent = true;
+        childrenTrapped = false;
+      } else
+      { // check if time is up
+        currentMillis = millis();
+        if (currentMillis - startOfWaitingTime >= waitingForAnswerTime) {
+          answerFromParent = true;
+        }
+      }
+    }
+*/
+
 
     // check for answerFromParent state :
     /*
       if false do the logic :
       action to do.
     */
+
+
     delay(5000);
   }
 }
-  /**
-    massage + leds to say that the children are out from the car
-  */
-  void CarShutdown() {
-    // send massage to screen - the shutdown
-    Serial.println("the car shutdown    ");
-    digitalWrite(ledPin, HIGH);
+/**
+  massage + leds to say that the children are out from the car
+*/
+void CarShutdown() {
+  // send massage to screen - the shutdown
+  Serial.println("the car shutdown    ");
+  digitalWrite(ledPin, HIGH);
 
-    SendMessageToScreen("car shutdown !   ", 0, 0);
-    delay(1500);
+  SendMessageToScreen("car shutdown !   ", 0, 0);
+  delay(1500);
 
-    SendMessageToScreenWithOutClear("Initialising.   ", 1, 0);
+  SendMessageToScreenWithOutClear("Initialising.   ", 1, 0);
 
-    delay(1500);
-    lcd.clear();
+  delay(1500);
+  lcd.clear();
 
-  }
+}
 
-  void SIMCardInit() {
+void SIMCardInit() {
 
-    // sms moudle setup:
-    Sim900Serial.begin(115200); // the GPRS baud rate
-    delay(500);
-    Sim900Serial.println("AT+IPR=19200");
-    delay(500);
+  // sms moudle setup:
+  Sim900Serial.begin(115200); // the GPRS baud rate
+  delay(500);
+  Sim900Serial.println("AT+IPR=19200");
+  delay(500);
 
-    SendMessageToScreen("Initialising..    ", 0, 0);
-    delay(300);
-    lcd.clear();
-    Sim900Serial.begin(19200); // the GPRS baud rate
-    delay(1000);
-  }
+  SendMessageToScreen("Initialising..    ", 0, 0);
+  delay(300);
+  lcd.clear();
+  Sim900Serial.begin(19200); // the GPRS baud rate
+  delay(1000);
+}
 
-  void SendMessageToScreen(String msg, int row, int col)
-  {
-    // clear the screen
-    lcd.clear();
-    //set cursor
-    lcd.setCursor(col, row);
-    // send the message to the screen
-    lcd.println(msg);
-  }
+void SendMessageToScreen(String msg, int row, int col)
+{
+  // clear the screen
+  lcd.clear();
+  //set cursor
+  lcd.setCursor(col, row);
+  // send the message to the screen
+  lcd.println(msg);
+}
 
-  void SendMessageToScreenWithOutClear(String msg, int row, int col)
-  {
-    //set cursor
-    lcd.setCursor(col, row);
-    // send the message to the screen
-    lcd.println(msg);
-  }
+void SendMessageToScreenWithOutClear(String msg, int row, int col)
+{
+  //set cursor
+  lcd.setCursor(col, row);
+  // send the message to the screen
+  lcd.println(msg);
+}
 
 
-  void SendTextMessage(String msg, String phoneNumber)
-  {
-    Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
-    delay(100);
-    Sim900Serial.println("AT + CMGS = \"" + phoneNumber + "\""); //The target phone number
-    delay(100);
-    Sim900Serial.println(msg); //the content of the message
-    delay(100);
-    Sim900Serial.println((char)26); //the ASCII code of the ctrl+z is 26
-    delay(100);
-    Sim900Serial.println();
-  }
+void SendTextMessage(String msg, String phoneNumber)
+{
+  Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
+  delay(100);
+  Sim900Serial.println("AT + CMGS = \"" + phoneNumber + "\""); //The target phone number
+  delay(100);
+  Sim900Serial.println(msg); //the content of the message
+  delay(100);
+  Sim900Serial.println((char)26); //the ASCII code of the ctrl+z is 26
+  delay(100);
+  Sim900Serial.println();
+}
+String getSMS() {
+  delay(1);
+  return "";
+}
+bool SMSValidation(String answerToCheck) {
+  delay(1);
+  return true;
+}
 
-  void loop() {
+void loop() {
 
-  }
+}
