@@ -1,62 +1,70 @@
 unsigned long time;
-int newTime = 0;
-const int takeChildrenOutFromTheCar = 3000;
+const int carIsOnPin = 10;
+int ledPin = 13;
+const int takeChildrenOutFromTheCar = 10000; // 3 sec
+int newMillisRead = 0;
 bool answerFromParent = false;
-
 void setup() {
+  // set carIsOn pin
+  pinMode(carIsOnPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
   Serial.begin(9600);
+  Serial.println("start of prog");
+
+  //    check for the car shut down
   time = millis();
   Serial.println(time);
-  while (time <5000)
-  { 
-    time = millis();
+  while (digitalRead(carIsOnPin) == HIGH) {
+    delay(1);
   }
-  Serial.println("end of time"); //prints time since program started
-   /* 
-    *  check for the car shut down
-    *  
-    */
-   while (carIsOn){
-    
-   }
-   time = millis();
-   /*
-    * give some time to take out the children out from the 
-    * car after the car was shutdown. 
-    * time to dely is takeChildrenOutFromTheCar
-    */
-   while ((newTime - takeChildrenOutFromTheCar) >  time) >){
-        newTime = millis(); 
-   }
-   /*
-    * check for child in the seat :
-    * if no, continue to exit (end of setup section.
-    * if yes, start the logic
-    */
-    
-    while (!answerFromParent){
-      /*
-       * logic to decide what sms to send
-       */
-       // send the sms
+  CarShutdown();
+  Serial.println("return from car shut down");
+  
+  /*
+     give some time to take out the children out from the
+     car after the car was shutdown.
+     time to dely is takeChildrenOutFromTheCar
+  */
 
-       /*
-        * while loop tho wait for answer from parent
-        * if got answer = change answerFromParent state to true
-        * else continue
-        * 
-        */
+  delay(takeChildrenOutFromTheCar);
+  Serial.println("waited time to take children out of the car");
 
-        // check for answerFromParent state :
-        /*
-         * if false do the logic : 
-         * action to do.
-         */
-    }
-  /**
-   * massage + leds to say that the children are out from the car
-   */
+  /*
+     check for child in the seat :
+     if no, continue to exit (end of setup section. answerFromParent = true;
+     if yes, start the logic
+  */
+
+  //while (!answerFromParent) {
+  /*
+     logic to decide what sms to send
+  */
+  // send the sms
+
+  /*
+     while loop tho wait for answer from parent
+     if got answer = change answerFromParent state to true
+     else continue
+
+  */
+
+  // check for answerFromParent state :
+  /*
+     if false do the logic :
+     action to do.
+  */
+}
+/**
+   massage + leds to say that the children are out from the car
+*/
+void CarShutdown() {
+  // send massage to screen - the shutdown
+  Serial.println("the car shutdown");
+  digitalWrite(ledPin, HIGH);
+
 }
 void loop() {
- 
+
 }
