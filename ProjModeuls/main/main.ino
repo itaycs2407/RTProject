@@ -10,16 +10,16 @@ SoftwareSerial Sim900Serial(2, 3);
 
 // variable declaratio + setup
 
-const int timeToTakeChildrenOutFromTheCar = 3000; // 3 sec
+const int timeToTakeChildrenOutFromTheCar = 5000; // 3 sec
 const String PHONE = "972587600202";
 const int carIsOnPin = 10;
 int ledPin = 13;
-
-int toggle = 0;
-int counter = 1;
-char incoming_char = 0;
+int actionNumber = 1;
+int msgCounter = 1;
+String tempMsgToSMS = "";
+String tempMsgToScreen = "";
 unsigned long time;
-int newMillisRead = 0;
+
 bool answerFromParent = false;
 
 
@@ -31,41 +31,36 @@ void setup() {
   digitalWrite(ledPin, LOW);
   //lcd setup
   lcd.begin(16, 2);
-
+  SendMessageToScreenWithOutClear("Car in runnig     ", 0, 0);
 
 
   Serial.begin(9600);
   Serial.println("start of prog");
 
   //    check for the car shut down
-  time = millis();
-  Serial.println(time);
+
   while (digitalRead(carIsOnPin) == HIGH) {
     delay(1);
   }
   CarShutdown();
   SIMCardInit();
-  SendMessageToScreen("Initialising...", 0, 0);
+  SendMessageToScreenWithOutClear("Initialising...  ", 0, 0);
 
   delay(1000);
   lcd.clear();
   delay(750);
-  SendMessageToScreen("Standby Mode.", 0, 0);
-
-
-
-
+  SendMessageToScreen("Detecting seats  ", 0, 0);
+  delay(timeToTakeChildrenOutFromTheCar);
   /*
     give some time to take out the children out from the
     car after the car was shutdown.
-    time to dely is takeChildrenOutFromTheCar
+    time to dely is timeToTakeChildrenOutFromTheCar
   */
 
-  delay(timeToTakeChildrenOutFromTheCar);
   //Serial.println("waited time to take children out of the car");
-  SendMessageToScreen("Detected children ", 0, 0);
-  SendMessageToScreenWithOutClear
-  ("children ", 0, 1);
+  SendMessageToScreen            ("Children         ", 0, 0);
+  SendMessageToScreenWithOutClear("detected         ", 1, 0);
+  answerFromParent = false;
 
   /*
     check for child in the seat :
@@ -73,77 +68,99 @@ void setup() {
     if yes, start the logic
   */
 
-  //while (!answerFromParent) {
-  /*
-    logic to decide what sms to send
+  while (!answerFromParent) {
+    /*
+      logic to decide what sms to send
+    */
+    tempMsgToSMS = "this is message number " + String(msgCounter);
+    tempMsgToScreen = "message sent!" + String(msgCounter) + "   " ;
+    Serial.println(tempMsgToScreen);
+    msgCounter++;
+    delay(2000);
+    //SendTextMessage(tempMsgToSMS, PHONE);
+    SendMessageToScreen(tempMsgToScreen, 0, 0);
+    
+
+    /*
+      while loop tho wait for answer from parent
+      if got answer = change answerFromParent state to true
+      else continue
+
+    */
+
+    // check for answerFromParent state :
+    /*
+      if false do the logic :
+      action to do.
+    */
+    delay(5000);
+  }
+}
+  /**
+    massage + leds to say that the children are out from the car
   */
-  // send the sms
+  void CarShutdown() {
+    // send massage to screen - the shutdown
+    Serial.println("the car shutdown    ");
+    digitalWrite(ledPin, HIGH);
 
-  /*
-    while loop tho wait for answer from parent
-    if got answer = change answerFromParent state to true
-    else continue
+    SendMessageToScreen("car shutdown !   ", 0, 0);
+    delay(1500);
 
-  */
+    SendMessageToScreenWithOutClear("Initialising.   ", 1, 0);
 
-  // check for answerFromParent state :
-  /*
-    if false do the logic :
-    action to do.
-  */
-}
-/**
-  massage + leds to say that the children are out from the car
-*/
-void CarShutdown() {
-  // send massage to screen - the shutdown
-  Serial.println("the car shutdown   ");
-  digitalWrite(ledPin, HIGH);
+    delay(1500);
+    lcd.clear();
 
-  SendMessageToScreen("car shutdown !   ", 0, 0);
-  delay(1500);
+  }
 
-  SendMessageToScreenWithOutClear("Initialising.   ", 1, 0);
+  void SIMCardInit() {
 
-  delay(1500);
-  lcd.clear();
+    // sms moudle setup:
+    Sim900Serial.begin(115200); // the GPRS baud rate
+    delay(500);
+    Sim900Serial.println("AT+IPR=19200");
+    delay(500);
 
-}
+    SendMessageToScreen("Initialising..    ", 0, 0);
+    delay(300);
+    lcd.clear();
+    Sim900Serial.begin(19200); // the GPRS baud rate
+    delay(1000);
+  }
 
-void SIMCardInit() {
+  void SendMessageToScreen(String msg, int row, int col)
+  {
+    // clear the screen
+    lcd.clear();
+    //set cursor
+    lcd.setCursor(col, row);
+    // send the message to the screen
+    lcd.println(msg);
+  }
 
-  // sms moudle setup:
-  Sim900Serial.begin(115200); // the GPRS baud rate
-  delay(500);
-  Sim900Serial.println("AT+IPR=19200");
-  delay(500);
-  
-  SendMessageToScreen("Initialising..",0,0);
-  delay(300);
-  lcd.clear();
-  Sim900Serial.begin(19200); // the GPRS baud rate
-  delay(1000);
-}
+  void SendMessageToScreenWithOutClear(String msg, int row, int col)
+  {
+    //set cursor
+    lcd.setCursor(col, row);
+    // send the message to the screen
+    lcd.println(msg);
+  }
 
-void SendMessageToScreen(String msg, int row, int col)
-{
 
-  // clear the screen
-  lcd.clear();
-  //set cursor
-  lcd.setCursor(col, row);
-  // send the message to the screen
-  lcd.println(msg);
-}
+  void SendTextMessage(String msg, String phoneNumber)
+  {
+    Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
+    delay(100);
+    Sim900Serial.println("AT + CMGS = \"" + phoneNumber + "\""); //The target phone number
+    delay(100);
+    Sim900Serial.println(msg); //the content of the message
+    delay(100);
+    Sim900Serial.println((char)26); //the ASCII code of the ctrl+z is 26
+    delay(100);
+    Sim900Serial.println();
+  }
 
-void SendMessageToScreenWithOutClear(String msg, int row, int col)
-{
+  void loop() {
 
-  //set cursor
-  lcd.setCursor(col, row);
-  // send the message to the screen
-  lcd.println(msg);
-}
-void loop() {
-
-}
+  }
