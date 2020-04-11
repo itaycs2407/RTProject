@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "softwareserial.h": "c"
+    }
+}

@@ -24,8 +24,13 @@ String tempMsgToScreen = "";
 unsigned long currentMillis = 0;
 unsigned long startOfWaitingTime = 0;
 bool childrenTrapped = true;
+String charFromSMSModule = "";
 bool answerFromParent = false;
+bool noAnswer = true;
 String smsAnswer = "";
+
+byte buffer[64];
+int count = 0;
 
 void setup()
 {
@@ -61,7 +66,6 @@ void setup()
   */
   Serial.println("waited time to take children out of the car");
   ChildrenDetedted();
-  SystemShutdown();
   /*
     check for child in the seat :
     if no, continue to exit (end of setup section. answerFromParent = true;
@@ -73,7 +77,7 @@ void setup()
       logic to decide what sms to send
     */
     tempMsgToSMS = "this is message number " + String(msgCounter);
-    tempMsgToScreen = "message sent!" + String(msgCounter) + "   ";
+    tempMsgToScreen = "message sent! #" + String(msgCounter) + "   ";
     Serial.println(tempMsgToScreen);
     msgCounter++;
     delay(2000);
@@ -85,22 +89,24 @@ void setup()
       if got answer = change answerFromParent state to true
       else continue
     */
-    /*
-    while (!answerFromParent) {
+    answerFromParent = false;
+    noAnswer = true;
+    Serial.println("entering to get sms message");
+    while (!answerFromParent)
+    {
       // waiting for answer logic - wait for the sms to come
-      smsAnswer = getSMS();
-      if (SMSValidation(smsAnswer) == true) {
+      if (noAnswer)
+      {
+        //startOfWaitingTime = millis();
+        smsAnswer = getSMS();
+      }
+      /* if (SMSValidation(smsAnswer) == true) {
         answerFromParent = true;
         childrenTrapped = false;
       } else
-      { // check if time is up
-        currentMillis = millis();
-        if (currentMillis - startOfWaitingTime >= waitingForAnswerTime) {
-          answerFromParent = true;
-        }
-      }
+      { // check if time is up}*/
     }
-*/
+
     // check for answerFromParent state :
     /*
       if false do the logic :
@@ -109,6 +115,8 @@ void setup()
     delay(5000);
   }
 }
+//  SystemShutdown();
+
 /**
   massage + leds to say that the children are out from the car
 */
@@ -185,9 +193,49 @@ void SendTextMessage(String msg, String phoneNumber)
 }
 String getSMS()
 {
-  delay(1);
+  //Sim900Serial.print("AT+CMGF=1\r");
+  //delay(100);
+  //Sim900Serial.print("AT+CNMI=2,2,0,0,0\r");
+  //delay(100);
+  Sim900Serial.println("AT+CNMI=2,2,0,0,0\r"); // AT Command to recieve a live SMS
+  currentMillis = millis();
+  Sim900Serial.println("AT+CMGR=35");
+  while (currentMillis - startOfWaitingTime < waitingForAnswerTime)
+  {
+    //Serial.println(Sim900Serial.available());
+    if (Sim900Serial.available())
+    {
+      Sim900Serial.println("AT+CMGR=35");
+      while (Sim900Serial.available())
+      {
+        Serial.println("from the wihile loo");
+
+        //SendMessageToScreen("got sms", 0, 0);
+        /*buffer[count++] = Sim900Serial.read(); // writing data into array
+        if (count == 64)
+          break;
+        */
+        charFromSMSModule = Sim900Serial.read();
+        Serial.println(charFromSMSModule);
+        Sim900Serial.println("AT+CMGR=31");
+        Sim900Serial.println("AT+CMGR=35"); /*
+        Serial.write(charFromSMSModule);
+        Serial.println(char(charFromSMSModule));
+        Serial.println("this " + String(charFromSMSModule));*/
+
+        noAnswer = false;
+      }
+
+      Serial.println("finished getSMS");
+      count = 0;
+    }
+    currentMillis = millis();
+  }
+  answerFromParent = true;
+  Serial.println(currentMillis - startOfWaitingTime);
   return "";
 }
+
 bool SMSValidation(String answerToCheck)
 {
   delay(1);
