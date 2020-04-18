@@ -21,10 +21,10 @@ int actionNumber = 1;
 int msgCounter = 1;
 String tempMsgToSMS = "";
 String tempMsgToScreen = "";
-unsigned long currentMillis = 0;
-unsigned long startOfWaitingTime = 0;
+long currentMillis = 0;
+long startOfWaitingTime = 0;
 bool childrenTrapped = true;
-String charFromSMSModule = "";
+char charFromSMSModule = 0;
 bool answerFromParent = false;
 bool noAnswer = true;
 String smsAnswer = "";
@@ -83,7 +83,7 @@ void setup()
     delay(2000);
     //SendTextMessage(tempMsgToSMS, PHONE);
     SendMessageToScreen(tempMsgToScreen, 0, 0);
-    startOfWaitingTime = millis();
+    delay(1000);
     /*
       while loop tho wait for answer from parent
       if got answer = change answerFromParent state to true
@@ -91,28 +91,18 @@ void setup()
     */
     answerFromParent = false;
     noAnswer = true;
-    Serial.println("entering to get sms message");
+
     while (!answerFromParent)
     {
-      // waiting for answer logic - wait for the sms to come
-      if (noAnswer)
-      {
-        //startOfWaitingTime = millis();
-        smsAnswer = getSMS();
-      }
-      /* if (SMSValidation(smsAnswer) == true) {
-        answerFromParent = true;
-        childrenTrapped = false;
-      } else
-      { // check if time is up}*/
-    }
+      String newStr = getSMS();
 
-    // check for answerFromParent state :
-    /*
+      // check for answerFromParent state :
+      /*
       if false do the logic :
       action to do.
     */
-    delay(5000);
+      delay(5000);
+    }
   }
 }
 //  SystemShutdown();
@@ -146,11 +136,12 @@ void ChildrenDetedted()
   SendMessageToScreen("Children         ", 0, 0);
   SendMessageToScreenWithOutClear("detected         ", 1, 0);
   digitalWrite(childrenTrappedLed, HIGH);
+  childrenTrapped = true;
 }
 void SIMCardInit()
 {
   // sms moudle setup:
-  Sim900Serial.begin(115200); // the GPRS baud rate
+  Sim900Serial.begin(19200); // the GPRS baud rate
   delay(500);
   Sim900Serial.println("AT+IPR=19200");
   delay(500);
@@ -191,49 +182,49 @@ void SendTextMessage(String msg, String phoneNumber)
   delay(100);
   Sim900Serial.println();
 }
+
 String getSMS()
 {
-  //Sim900Serial.print("AT+CMGF=1\r");
-  //delay(100);
-  //Sim900Serial.print("AT+CNMI=2,2,0,0,0\r");
-  //delay(100);
-  Sim900Serial.println("AT+CNMI=2,2,0,0,0\r"); // AT Command to recieve a live SMS
-  currentMillis = millis();
-  Sim900Serial.println("AT+CMGR=35");
-  while (currentMillis - startOfWaitingTime < waitingForAnswerTime)
+  Serial.println("entering to get sms message");
+  Sim900Serial.print("AT+CMGF=1\r");
+  Sim900Serial.print("AT+CNMI=2,2,0,0,0\r");
+  delay(500);
+  startOfWaitingTime = millis();
+  currentMillis = 0;
+  int countSec = 10;
+  char buffer[64];
+  int counter = 0;
+  Serial.println("===========================");
+
+  while ((currentMillis - waitingForAnswerTime) < startOfWaitingTime)
   {
-    //Serial.println(Sim900Serial.available());
-    if (Sim900Serial.available())
+    Serial.println("===========================");
+    Serial.print("the available data :");
+    Serial.println(Sim900Serial.available());
+    Serial.println("===========================");
+    while (Sim900Serial.available() > 0)
     {
-      Sim900Serial.println("AT+CMGR=35");
-      while (Sim900Serial.available())
-      {
-        Serial.println("from the wihile loo");
+      Serial.println("in the inner loop");
 
-        //SendMessageToScreen("got sms", 0, 0);
-        /*buffer[count++] = Sim900Serial.read(); // writing data into array
-        if (count == 64)
-          break;
-        */
-        charFromSMSModule = Sim900Serial.read();
-        Serial.println(charFromSMSModule);
-        Sim900Serial.println("AT+CMGR=31");
-        Sim900Serial.println("AT+CMGR=35"); /*
-        Serial.write(charFromSMSModule);
-        Serial.println(char(charFromSMSModule));
-        Serial.println("this " + String(charFromSMSModule));*/
-
-        noAnswer = false;
-      }
-
-      Serial.println("finished getSMS");
-      count = 0;
+      charFromSMSModule = Sim900Serial.read();
+      Serial.print(charFromSMSModule);
+      buffer[counter++] = charFromSMSModule;
+      Serial.println(buffer);
     }
+    //Serial.println("after the inner while loop");
+    delay(1000);
+    countSec--;
+    Serial.print("more ");
+    Serial.print(countSec);
+    Serial.println(" sec to go");
     currentMillis = millis();
+    Serial.println(buffer);
   }
-  answerFromParent = true;
-  Serial.println(currentMillis - startOfWaitingTime);
-  return "";
+  Serial.print("this is the buffer  : ");
+  Serial.println(buffer);
+  Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
+  delay(100);
+  return "ture";
 }
 
 bool SMSValidation(String answerToCheck)

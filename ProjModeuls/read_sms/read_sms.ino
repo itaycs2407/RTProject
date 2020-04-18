@@ -1,42 +1,75 @@
 /*********
-  Complete project details at https://randomnerdtutorials.com  
+  Complete project details at https://randomnerdtutorials.com
 *********/
-
+char buffer[64];
+char msg[10];
+int counter = 0;
+int i;
 #include <SoftwareSerial.h>
 
 // Configure software serial port
 SoftwareSerial SIM900(2, 3);
 //Variable to save incoming SMS characters
-char incoming_char=0;
-int index = 0; 
-void setup() {
+char incoming_char = 0;
+int index = 0;
+int count = 10;
+void setup()
+{
   // Arduino communicates with SIM900 GSM shield at a baud rate of 19200
   // Make sure that corresponds to the baud rate of your module
   SIM900.begin(19200);
   // For serial monitor
-  Serial.begin(19200); 
+  Serial.begin(9600);
   // Give time to your GSM shield log on to network
-  delay(20000);
+  //delay(10000);
+  Serial.println("finish 10 sec delay");
 
   // AT command to set SIM900 to SMS mode
-  SIM900.print("AT+CMGF=1\r"); 
+  //SIM900.print("AT+CMGF=1\r");
   delay(100);
-  // Set module to send SMS data to serial out upon receipt 
+  // Set module to send SMS data to serial out upon receipt
+  //SIM900.print("AT+CNMI=2,2,0,0,0\r");
+  delay(100);
+  long timer = millis();
+  long currentTime = 0;
+  Serial.print("current m iilis time : ");
+  Serial.println(timer);
+
+  SIM900.print("AT+CMGF=1\r");
   SIM900.print("AT+CNMI=2,2,0,0,0\r");
   delay(100);
-}
+  Serial.println("entering the while loop");
+  while (currentTime - 10000 < timer)
+  {
 
-void loop() {
-  // Display any text that the GSM shield sends out on the serial monitor
-  if(SIM900.available() >0) {
-    //Get the character from the cellular serial port
-    //index = index + 1;
-    incoming_char=SIM900.read(); 
-    if (incoming_char=='\n')
-        index = 100;
-    else
-        index = 0;
-    //Print the incoming character to the terminal
-    Serial.print(incoming_char); 
+    while (SIM900.available() > 0)
+
+    {
+      //Serial.println(currentTime);
+      incoming_char = SIM900.read();
+      //Serial.print(incoming_char);
+      buffer[counter++] = incoming_char;
+    }
+    delay(1000);
+    count--;
+    Serial.print("more ");
+    Serial.print(count);
+    Serial.println(" sec to go");
+    currentTime = millis();
+    //Serial.println(currentTime);
   }
+  Serial.println("exiting from loop");
+  //Serial.println(buffer);
+  int j = 0;
+  for (i = 36; i < 40; i++)
+  {
+    //  Serial.print(buffer[i]);
+    msg[j++] = buffer[i];
+  }
+  Serial.println("===========================");
+  Serial.println(msg);
+  Serial.println("===========================");
+}
+void loop()
+{
 }
