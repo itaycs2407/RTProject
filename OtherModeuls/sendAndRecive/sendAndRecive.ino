@@ -5,12 +5,13 @@ SoftwareSerial SIM900SSender(2, 3);
 SoftwareSerial SIM900SReciver(2, 3);
 const String PHONE = "972587600202";
 bool gotMessage = false;
+bool gotMsg = false;
 char buffer[64];
-char msg[10];
+char msg[64];
 char incoming_char = 0;
 int counter = 0;
 int i;
-String msggg = "";
+String msggg = "", newString = "";
 void setup()
 
 {
@@ -18,76 +19,100 @@ void setup()
     SIM900SReciver.begin(19200);
     Serial.begin(9600);
 
+    // entering text mode for both the instances
     SIM900SSender.print("AT+CMGF=1\r");
     SIM900SReciver.print("AT+CMGF=1\r");
-    delay(100);
-
-    /*SIM900SSender.print("AT+CNMI=2,2,0,0,0\r");
-    /*SIM900SReciver.print("AT+CNMI=2,2,0,0,0\r"); */
-    delay(100);
-
-    Serial.println("Sending Sms IN 5 SECONDS :");
-    delay(5000);
+    delay(200);
+    Serial.println("Sending Sms IN 2 SECONDS :");
+    delay(2000);
     Serial.println("Sending now....");
-
-    //sendMsg();
-
+    //sendMsg("write me somthing...");
     Serial.println("SMS was sent!");
     Serial.println("Entering to LOOP section.... ");
-}
-void loop()
-{
-    SIM900SReciver.flush();
-    counter = 0;
-    while (SIM900SReciver.available() > 0)
+
+    while (true)
     {
-
-        // Serial.print("this is the SIM900SReciver.available : ");
-        //Serial.println(SIM900SReciver.available());
-
-        //Serial.println(currentTime);
-        incoming_char = SIM900SReciver.read();
-        //Serial.print(incoming_char);
-        buffer[counter++] = incoming_char;
-    }
-
-    /* int j = 0;
-        for (i = 36; i < 40; i++)
+        delay(500);
+        counter = 0;
+        int i;
+        while (SIM900SReciver.available() > 0)
         {
-            //  Serial.print(buffer[i]);
-            msg[j++] = buffer[i];
-        } */
-    msggg = buffer;
-    if (msggg.indexOf("9725") != -1)
-    {
-        Serial.println("===========================");
-        // Serial.println(msggg.substring(msggg.indexOf(",\"\",")));
-        Serial.println(msggg.substring(msggg.indexOf("+12") + 6));
-        Serial.println("===========================");
-        Serial.println(msggg);
-        msggg = "";
+            incoming_char = SIM900SReciver.read();
+            buffer[counter++] = incoming_char;
+        }
+
+        for (i = 0; i < counter; i++)
+        {
+            msg[i] = buffer[i];
+        }
+
+        if (counter > 0)
+        {
+            while (counter >= 0)
+            {
+                buffer[counter--] = ' ';
+            }
+        }
+
+        if (checkForStateCode(msg))
+        {
+
+            msg[63] = '\0';
+
+            newString = msg;
+            newString.toLowerCase();
+            newString = newString.substring(newString.indexOf("\n", 10));
+            newString = newString.substring(1);
+            newString.trim();
+            Serial.print("Incoming message : " + newString + "\n");
+            if (newString == "ok")
+            {
+                Serial.println("found OK !");
+            }
+            if (newString == "momo")
+            {
+                Serial.println("momo is in the house !");
+                //sendMsg("what up momo ?? ");
+            }
+            if (newString == "go")
+            {
+                Serial.println("found go !");
+            }
+            while (SIM900SReciver.read() > 0)
+            {
+                delay(1);
+            }
+            for (i = 0; i < 64; i++)
+            {
+                msg[i] = '\0';
+            }
+            newString = "";
+        }
     }
-    else
-    {
-        Serial.println("===========================");
-        //SIM900SReciver.flush();
-        Serial.println(msggg); /*
-        Serial.println(msggg.indexOf("9725"));
-        Serial.println("didnt find the string"); */
-    }
-    msggg = "";
 }
 
-void sendMsg()
+void sendMsg(String msgToSend)
 {
     SIM900SSender.print("AT+CMGF=1\r"); //Sending the SMS in text mode
     delay(100);
     SIM900SSender.println("AT + CMGS = \"" + PHONE + "\""); //The target phone number
     delay(100);
-    SIM900SSender.println("this is the message"); //the content of the message
+    SIM900SSender.println(msgToSend); //the content of the message
     delay(100);
     SIM900SSender.println((char)26); //the ASCII code of the ctrl+z is 26
     delay(100);
     SIM900SSender.println();
     delay(2000);
+}
+
+bool checkForStateCode(char msg[])
+{
+    char *ptr = msg;
+    int i;
+    for (i = 0; i < 62; i++)
+    {
+        if (msg[i] == '9' && msg[i + 1] == '7' && msg[i + 2] == '2')
+            return true;
+    }
+    return false;
 }
