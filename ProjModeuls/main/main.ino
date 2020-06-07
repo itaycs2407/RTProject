@@ -3,15 +3,26 @@
 // Moudules setup
 
 // LCD settings.
-const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 7, d7 = 6;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // SIMCard Moudle
-SoftwareSerial Sim900Serial(2, 3);
+SoftwareSerial Sender(2, 3);
+SoftwareSerial Reciver(2, 3);
+// variable declaration + setup
 
-// variable declaratio + setup
+// from the send and reciver
+bool gotMessage = false;
+bool gotMsg = false;
+char buffer[64];
+char msg[64];
+char incoming_char = 0;
+int counter = 0;
+int i;
+String msggg = "", newString = "";
+// end of send and receive
 
-const int timeToTakeChildrenOutFromTheCar = 5000; // 3 sec
+const int timeToTakeChildrenOutFromTheCar = 3000; // 3 sec
 const String PHONE = "972587600202";
 const int carIsOnPin = 10;
 const long waitingForAnswerTime = 10000;
@@ -29,17 +40,18 @@ bool answerFromParent = false;
 bool noAnswer = true;
 String smsAnswer = "";
 
-byte buffer[64];
 int count = 0;
 
 void setup()
 {
+
   // set carIsOn pin
   pinMode(carIsOnPin, INPUT_PULLUP);
   pinMode(carShutDownLed, OUTPUT);
   pinMode(childrenTrappedLed, OUTPUT);
   digitalWrite(carShutDownLed, LOW);
   digitalWrite(childrenTrappedLed, LOW);
+
   //lcd setup
   lcd.begin(16, 2);
   SendMessageToScreenWithOutClear("Car is runnig     ", 0, 0);
@@ -81,7 +93,7 @@ void setup()
     Serial.println(tempMsgToScreen);
     msgCounter++;
     delay(2000);
-    //SendTextMessage(tempMsgToSMS, PHONE);
+    // SendTextMessage(tempMsgToSMS, PHONE);
     SendMessageToScreen(tempMsgToScreen, 0, 0);
     delay(1000);
     /*
@@ -94,14 +106,18 @@ void setup()
 
     while (!answerFromParent)
     {
+      Serial.println("going to get sms");
       String newStr = getSMS();
-
+      SendMessageToScreen(newStr, 0, 0);
       // check for answerFromParent state :
+      delay(1000);
+      SendMessageToScreen("starting new loop ", 0, 0);
       /*
       if false do the logic :
       action to do.
     */
-      delay(5000);
+      noAnswer = true;
+      delay(1000);
     }
   }
 }
@@ -141,17 +157,21 @@ void ChildrenDetedted()
 void SIMCardInit()
 {
   // sms moudle setup:
-  Sim900Serial.begin(19200); // the GPRS baud rate
+  Sender.begin(19200);  // the GPRS baud rate
+  Reciver.begin(19200); // the GPRS baud rate
   delay(500);
-  Sim900Serial.println("AT+IPR=19200");
+  Serial.println("in init the sim card");
+  Sender.print("AT+CMGF=1\r");
+  Reciver.print("AT+CMGF=1\r");
+  // MERGE : Sender.println("AT+IPR=19200");
   delay(500);
   SendMessageToScreen("initializing..    ", 0, 0);
   delay(300);
   lcd.clear();
-  Sim900Serial.begin(19200); // the GPRS baud rate
+  Sender.begin(19200); // the GPRS baud rate
+  Reciver.begin(19200);
   delay(1000);
 }
-
 void SendMessageToScreen(String msg, int row, int col)
 {
   // clear the screen
@@ -161,7 +181,6 @@ void SendMessageToScreen(String msg, int row, int col)
   // send the message to the screen
   lcd.println(msg);
 }
-
 void SendMessageToScreenWithOutClear(String msg, int row, int col)
 {
   //set cursor
@@ -169,70 +188,158 @@ void SendMessageToScreenWithOutClear(String msg, int row, int col)
   // send the message to the screen
   lcd.println(msg);
 }
-
 void SendTextMessage(String msg, String phoneNumber)
 {
-  Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
+  Sender.print("AT+CMGF=1\r"); //Sending the SMS in text mode
   delay(100);
-  Sim900Serial.println("AT + CMGS = \"" + phoneNumber + "\""); //The target phone number
+  Sender.println("AT + CMGS = \"" + phoneNumber + "\""); //The target phone number
   delay(100);
-  Sim900Serial.println(msg); //the content of the message
+  Sender.println(msg); //the content of the message
   delay(100);
-  Sim900Serial.println((char)26); //the ASCII code of the ctrl+z is 26
+  Sender.println((char)26); //the ASCII code of the ctrl+z is 26
   delay(100);
-  Sim900Serial.println();
+  Sender.println();
 }
-
 String getSMS()
 {
-  Serial.println("entering to get sms message");
-  Sim900Serial.print("AT+CMGF=1\r");
-  Sim900Serial.print("AT+CNMI=2,2,0,0,0\r");
-  delay(500);
+  Serial.println("***********entering to get sms message********");
   startOfWaitingTime = millis();
-  currentMillis = 0;
-  int countSec = 10;
-  char buffer[64];
-  int counter = 0;
-  Serial.println("===========================");
-
-  while ((currentMillis - waitingForAnswerTime) < startOfWaitingTime)
+  currentMillis = millis();
+  SendMessageToScreen("waiting for sms         ", 0, 0);
+  delay(2000);
+  while (noAnswer)
   {
-    Serial.println("===========================");
-    Serial.print("the available data :");
-    Serial.println(Sim900Serial.available());
-    Serial.println("===========================");
-    while (Sim900Serial.available() > 0)
-    {
-      Serial.println("in the inner loop");
 
-      charFromSMSModule = Sim900Serial.read();
-      Serial.print(charFromSMSModule);
-      buffer[counter++] = charFromSMSModule;
-      Serial.println(buffer);
+    SendMessageToScreen("in loop", 0, 0);
+    newString = "";
+    delay(500);
+    counter = 0;
+    int i;
+    while (Reciver.available() > 0)
+    {
+      incoming_char = Reciver.read();
+      digitalWrite(childrenTrappedLed, LOW);
+      buffer[counter++] = incoming_char;
     }
-    //Serial.println("after the inner while loop");
-    delay(1000);
-    countSec--;
-    Serial.print("more ");
-    Serial.print(countSec);
-    Serial.println(" sec to go");
+
+    //Serial.println(buffer);
+    Serial.println(Reciver.read());
+    for (i = 0; i < counter; i++)
+    {
+      msg[i] = buffer[i];
+    }
+
+    if (counter > 0)
+    {
+      while (counter >= 0)
+      {
+        buffer[counter--] = ' ';
+      }
+    }
+    Serial.println("before the check if");
+    //Serial.println(msg);
+    if (checkForStateCode(msg))
+    {
+      Serial.println("after the if /-**/*-/*-/-*/*-/*-/-*/*-/*-/-*/-*");
+      SendMessageToScreen("found 972", 0, 0);
+      delay(500);
+      msg[63] = '\0';
+
+      newString = msg;
+      newString.toLowerCase();
+      newString = newString.substring(newString.indexOf("\n", 10));
+      newString = newString.substring(1);
+      newString.trim();
+      Serial.print("Incoming message : " + newString + "\n");
+      if (newString == "ok")
+      {
+        Serial.println("found OK !");
+        SendMessageToScreen("found OK !", 0, 0);
+        delay(100);
+      }
+      if (newString == "momo")
+      {
+        Serial.println("momo is in the house !");
+        SendMessageToScreen("whats up momo ?!?", 0, 0);
+        Serial.println("whats up momo ?!?");
+        SendTextMessage("whats up momo ?!?", PHONE);
+        delay(500);
+      }
+      if (newString == "go")
+      {
+        Serial.println("found go !");
+      }
+      while (Reciver.read() > 0)
+      {
+        delay(1);
+      }
+      for (i = 0; i < 64; i++)
+      {
+        msg[i] = '\0';
+      }
+    }
+
     currentMillis = millis();
-    Serial.println(buffer);
+    if ((currentMillis - waitingForAnswerTime) > startOfWaitingTime)
+    {
+      noAnswer = false;
+    }
   }
-  Serial.print("this is the buffer  : ");
-  Serial.println(buffer);
-  Sim900Serial.print("AT+CMGF=1\r"); //Sending the SMS in text mode
-  delay(100);
-  return "ture";
+  SendMessageToScreen("done waiting         ", 0, 0);
+  delay(200);
+  return newString;
 }
 
-bool SMSValidation(String answerToCheck)
+bool checkForStateCode(char msg[])
 {
-  delay(1);
-  return true;
+  char *ptr = msg;
+  int i;
+  bool valToReturn = false;
+  for (i = 0; i < 62; i++)
+  {
+    if (msg[i] == '9' && msg[i + 1] == '7' && msg[i + 2] == '2')
+      valToReturn = true;
+  }
+  return valToReturn;
 }
 
 void loop()
 {
 }
+
+/*
+
+Serial.println("===========================");
+
+while ((currentMillis - waitingForAnswerTime) < startOfWaitingTime)
+{
+  Serial.println("===========================");
+  Serial.print("the available data :");
+  Serial.println(Sender.available());
+  Serial.println("===========================");
+  while (Sender.available() > 0)
+  {
+    Serial.println("in the inner loop");
+
+    charFromSMSModule = Sender.read();
+    Serial.print(charFromSMSModule);
+    buffer[counter++] = charFromSMSModule;
+    Serial.println(buffer);
+  }
+  //Serial.println("after the inner while loop");
+  delay(1000);
+  countSec--;
+  Serial.print("more ");
+  Serial.print(countSec);
+  Serial.println(" sec to go");
+  currentMillis = millis();
+  Serial.println(buffer);
+}
+Serial.print("this is the buffer  : ");
+Serial.println(buffer);
+Sender.print("AT+CMGF=1\r"); //Sending the SMS in text mode
+delay(100);
+return "ture";
+}
+
+*/

@@ -1,6 +1,6 @@
 {
-    "programmer": "Arduino as ISP",
+    "programmer": "ArduinoISP",
     "board": "arduino:avr:uno",
     "port": "COM6",
-    "sketch": "OtherModeuls\\sendAndRecive\\sendAndRecive.ino"
+    "sketch": "ProjModeuls\\main\\main.ino"
 }
