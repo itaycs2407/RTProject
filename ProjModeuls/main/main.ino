@@ -1,6 +1,7 @@
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
-// Moudules setup
+
+#pragma region module setup
 
 // LCD settings.
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 7, d7 = 6;
@@ -9,42 +10,46 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // SIMCard Moudle
 SoftwareSerial Sender(2, 3);
 SoftwareSerial Reciver(2, 3);
-// variable declaration + setup
 
-// from the send and reciver
-bool gotMessage = false;
-bool gotMsg = false;
+// variable declaration + setup
+// constants
+const int timeToTakeChildrenOutFromTheCar = 3000; // 3 sec
+const String PHONE = "972587600202";
+const long waitingForAnswerTime = 10000;
+
+// char
 char buffer[64];
 char msg[64];
 char incoming_char = 0;
-int counter = 0;
-int i;
-String msggg = "", newString = "";
-// end of send and receive
 
-const int timeToTakeChildrenOutFromTheCar = 3000; // 3 sec
-const String PHONE = "972587600202";
-const int carIsOnPin = 10;
-const long waitingForAnswerTime = 10000;
-int carShutDownLed = 13;
-int childrenTrappedLed = 9;
-int actionNumber = 1;
-int msgCounter = 1;
+// strings
+String newString = "";
 String tempMsgToSMS = "";
 String tempMsgToScreen = "";
+
+// leds
+int carShutDownLed = 13;
+int childrenTrappedLed = 9;
+
+// switch
+const int carIsOnPin = 10;
+
+// int
+int counter = 0;
+int i;
+int actionNumber = 1;
+int msgCounter = 1;
 long currentMillis = 0;
 long startOfWaitingTime = 0;
+
+//bool
 bool childrenTrapped = true;
-char charFromSMSModule = 0;
 bool answerFromParent = false;
 bool noAnswer = true;
-String smsAnswer = "";
-
-int count = 0;
+#pragma endregion
 
 void setup()
 {
-
   // set carIsOn pin
   pinMode(carIsOnPin, INPUT_PULLUP);
   pinMode(carShutDownLed, OUTPUT);
@@ -54,6 +59,7 @@ void setup()
 
   //lcd setup
   lcd.begin(16, 2);
+
   SendMessageToScreenWithOutClear("Car is runnig     ", 0, 0);
   Serial.begin(9600);
   Serial.println("start of prog");
@@ -126,6 +132,7 @@ void setup()
 /**
   massage + leds to say that the children are out from the car
 */
+#pragma region auxelery function
 void CarShutdown()
 {
   // send massage to screen - the shutdown
@@ -289,7 +296,6 @@ String getSMS()
   delay(200);
   return newString;
 }
-
 bool checkForStateCode(char msg[])
 {
   char *ptr = msg;
@@ -302,44 +308,7 @@ bool checkForStateCode(char msg[])
   }
   return valToReturn;
 }
-
 void loop()
 {
 }
-
-/*
-
-Serial.println("===========================");
-
-while ((currentMillis - waitingForAnswerTime) < startOfWaitingTime)
-{
-  Serial.println("===========================");
-  Serial.print("the available data :");
-  Serial.println(Sender.available());
-  Serial.println("===========================");
-  while (Sender.available() > 0)
-  {
-    Serial.println("in the inner loop");
-
-    charFromSMSModule = Sender.read();
-    Serial.print(charFromSMSModule);
-    buffer[counter++] = charFromSMSModule;
-    Serial.println(buffer);
-  }
-  //Serial.println("after the inner while loop");
-  delay(1000);
-  countSec--;
-  Serial.print("more ");
-  Serial.print(countSec);
-  Serial.println(" sec to go");
-  currentMillis = millis();
-  Serial.println(buffer);
-}
-Serial.print("this is the buffer  : ");
-Serial.println(buffer);
-Sender.print("AT+CMGF=1\r"); //Sending the SMS in text mode
-delay(100);
-return "ture";
-}
-
-*/
+#pragma endregion
