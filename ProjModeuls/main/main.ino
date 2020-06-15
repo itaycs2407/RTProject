@@ -13,31 +13,33 @@ SoftwareSerial Reciver(2, 3);
 
 // variable declaration + setup
 // constants
-const int timeToTakeChildrenOutFromTheCar = 3000; // 3 sec
+const int timeToTakeChildrenOutFromTheCar = 5000;
 const String PHONE = "972587600202";
 const long waitingForAnswerTime = 10000;
 
 // char
-char buffer[64];
-char msg[64];
+char buffer[45];
+char msg[45];
 char incoming_char = 0;
 
 // strings
 String newString = "";
 String tempMsgToSMS = "";
 String tempMsgToScreen = "";
-
+//String massages[6] = {"Check childeren out from the car", "Check childeren out from the car", "Check childeren out from the car", "Sending massage to backup number", "Sending massage to polic HQ with GPS cord", "Calling 911 and healthcare"};
+//String actions[3] = {"Open car Windows", "Turn on hazard lights", "Horning!!"};
 // leds
 int carShutDownLed = 13;
 int childrenTrappedLed = 9;
+int waitingForSMSLed = 8;
 
 // switch
 const int carIsOnPin = 10;
+const int childrenDetedted = 0;
 
 // int
 int counter = 0;
 int i;
-int actionNumber = 1;
 int msgCounter = 1;
 long currentMillis = 0;
 long startOfWaitingTime = 0;
@@ -46,16 +48,12 @@ long startOfWaitingTime = 0;
 bool childrenTrapped = true;
 bool answerFromParent = false;
 bool noAnswer = true;
+bool childrenDetedtedWhileWaiting = false;
 #pragma endregion
 
 void setup()
 {
-  // set carIsOn pin
-  pinMode(carIsOnPin, INPUT_PULLUP);
-  pinMode(carShutDownLed, OUTPUT);
-  pinMode(childrenTrappedLed, OUTPUT);
-  digitalWrite(carShutDownLed, LOW);
-  digitalWrite(childrenTrappedLed, LOW);
+  initilaizeLeds();
 
   //lcd setup
   lcd.begin(16, 2);
@@ -69,30 +67,69 @@ void setup()
   {
     delay(1);
   }
+
+  delay(3000);
   CarShutdown();
   SIMCardInit();
   SendMessageToScreenWithOutClear("initializing...  ", 0, 0);
   delay(1000);
   lcd.clear();
   delay(750);
-  SendMessageToScreen("Detecting seats  ", 0, 0);
-  delay(timeToTakeChildrenOutFromTheCar);
+
   /*
     give some time to take out the children out from the
     car after the car was shutdown.
-    time to dely is timeToTakeChildrenOutFromTheCar
+    time to delay is timeToTakeChildrenOutFromTheCar
+    check for chiledren attached in the seat
   */
-  Serial.println("waited time to take children out of the car");
-  ChildrenDetedted();
-  /*
+
+  SendMessageToScreen("Detecting seats  ", 0, 0);
+  delay(2000);
+  Serial.println("start logic for detecting seats");
+  childrenDetedtedWhileWaiting = false;
+  startOfWaitingTime = millis();
+  currentMillis = millis();
+  Serial.println(startOfWaitingTime);
+  Serial.println(currentMillis);
+  Serial.println(timeToTakeChildrenOutFromTheCar);
+  while (!(childrenDetedtedWhileWaiting) && (currentMillis - timeToTakeChildrenOutFromTheCar) <= startOfWaitingTime)
+  {
+    Serial.println("in the while loop");
+    if (digitalRead(childrenDetedted) == HIGH)
+    {
+      childrenDetedtedWhileWaiting = true;
+    }
+    currentMillis = millis();
+  }
+  Serial.println(childrenDetedtedWhileWaiting);
+
+  // if childrenDetedtedWhileWaiting = true - the children are trapped else finish the prog
+  /* 
     check for child in the seat :
     if no, continue to exit (end of setup section. answerFromParent = true;
     if yes, start the logic
   */
+
+  // TODO: fix the if stat.
+  if (!(timeToTakeChildrenOutFromTheCar))
+  {
+    Serial.println("waited time to take children out of the car");
+    SystemShutdown();
+  }
+  else
+  {
+    // fill for children trapped in the car.
+    ChildrenDetedted();
+  }
+  childrenTrapped = childrenDetedtedWhileWaiting;
+  startOfWaitingTime = 0;
+  currentMillis = 0;
+
   while (childrenTrapped)
   {
-    /*
+    /* TODO: implement  
       logic to decide what sms to send
+      array of 10 string, each represnting massage in escalading order
     */
     tempMsgToSMS = "this is message number " + String(msgCounter);
     tempMsgToScreen = "message sent! #" + String(msgCounter) + "   ";
@@ -103,8 +140,8 @@ void setup()
     SendMessageToScreen(tempMsgToScreen, 0, 0);
     delay(1000);
     /*
-      while loop tho wait for answer from parent
-      if got answer = change answerFromParent state to true
+      while loop too wait for answer from parent
+      if got answer = change answerFromParent to true
       else continue
     */
     answerFromParent = false;
@@ -113,25 +150,43 @@ void setup()
     while (!answerFromParent)
     {
       Serial.println("going to get sms");
+      digitalWrite(waitingForSMSLed, HIGH);
       String newStr = getSMS();
-      SendMessageToScreen(newStr, 0, 0);
-      // check for answerFromParent state :
-      delay(1000);
-      SendMessageToScreen("starting new loop ", 0, 0);
+      digitalWrite(waitingForSMSLed, LOW);
       /*
-      if false do the logic :
-      action to do.
+      validating the message 
+           
+      */
+      SendMessageToScreen("                   ", 0, 0);
+      SendMessageToScreen("                   ", 1, 0);
+      SendMessageToScreen("got something      ", 0, 0);
+
+      delay(2000);
+      if (newStr != "")
+      {
+        if (newStr.equals("momo"))
+        {
+          answerFromParent = true;
+          SendMessageToScreen("sms: momo          ", 0, 0);
+          Serial.print("found momo");
+        }
+      }
+      if (!answerFromParent)
+      {
+        SendMessageToScreen("no answer        ", 0, 0);
+      }
+      delay(1000);
+      /* TODO: implement  
+    if false do the logic :
+    action to do.
     */
       noAnswer = true;
       delay(1000);
     }
   }
-}
-//  SystemShutdown();
 
-/**
-  massage + leds to say that the children are out from the car
-*/
+  SystemShutdown();
+}
 #pragma region auxelery function
 void CarShutdown()
 {
@@ -146,9 +201,11 @@ void CarShutdown()
 }
 void SystemShutdown()
 {
-  SendMessageToScreen("System shutdown..", 0, 0);
+  SendMessageToScreen("No children", 0, 0);
   delay(2000);
   digitalWrite(childrenTrappedLed, LOW);
+  delay(2000);
+  SendMessageToScreen("Starting shutdown..", 0, 0);
   delay(2000);
   SendMessageToScreen("Goodbye           ", 0, 0);
   delay(1500);
@@ -170,7 +227,6 @@ void SIMCardInit()
   Serial.println("in init the sim card");
   Sender.print("AT+CMGF=1\r");
   Reciver.print("AT+CMGF=1\r");
-  // MERGE : Sender.println("AT+IPR=19200");
   delay(500);
   SendMessageToScreen("initializing..    ", 0, 0);
   delay(300);
@@ -217,7 +273,7 @@ String getSMS()
   while (noAnswer)
   {
 
-    SendMessageToScreen("in loop", 0, 0);
+    SendMessageToScreen("in loop     ", 0, 0);
     newString = "";
     delay(500);
     counter = 0;
@@ -229,8 +285,6 @@ String getSMS()
       buffer[counter++] = incoming_char;
     }
 
-    //Serial.println(buffer);
-    Serial.println(Reciver.read());
     for (i = 0; i < counter; i++)
     {
       msg[i] = buffer[i];
@@ -243,8 +297,6 @@ String getSMS()
         buffer[counter--] = ' ';
       }
     }
-    Serial.println("before the check if");
-    //Serial.println(msg);
     if (checkForStateCode(msg))
     {
       Serial.println("after the if /-**/*-/*-/-*/*-/*-/-*/*-/*-/-*/-*");
@@ -269,7 +321,6 @@ String getSMS()
         Serial.println("momo is in the house !");
         SendMessageToScreen("whats up momo ?!?", 0, 0);
         Serial.println("whats up momo ?!?");
-        SendTextMessage("whats up momo ?!?", PHONE);
         delay(500);
       }
       if (newString == "go")
@@ -280,7 +331,7 @@ String getSMS()
       {
         delay(1);
       }
-      for (i = 0; i < 64; i++)
+      for (i = 0; i < 45; i++)
       {
         msg[i] = '\0';
       }
@@ -294,6 +345,7 @@ String getSMS()
   }
   SendMessageToScreen("done waiting         ", 0, 0);
   delay(200);
+
   return newString;
 }
 bool checkForStateCode(char msg[])
@@ -301,7 +353,7 @@ bool checkForStateCode(char msg[])
   char *ptr = msg;
   int i;
   bool valToReturn = false;
-  for (i = 0; i < 62; i++)
+  for (i = 0; i < 42; i++)
   {
     if (msg[i] == '9' && msg[i + 1] == '7' && msg[i + 2] == '2')
       valToReturn = true;
@@ -311,4 +363,15 @@ bool checkForStateCode(char msg[])
 void loop()
 {
 }
-#pragma endregion
+void initilaizeLeds()
+{
+  // set carIsOn pin
+  pinMode(carIsOnPin, INPUT_PULLUP);
+  pinMode(childrenDetedted, INPUT_PULLUP);
+  pinMode(carShutDownLed, OUTPUT);
+  pinMode(childrenTrappedLed, OUTPUT);
+  pinMode(waitingForSMSLed, OUTPUT);
+  digitalWrite(carShutDownLed, LOW);
+  digitalWrite(childrenTrappedLed, LOW);
+  digitalWrite(waitingForSMSLed, LOW);
+}
