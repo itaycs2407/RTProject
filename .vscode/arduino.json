@@ -1,5 +1,5 @@
 {
-    "programmer": "ArduinoISP",
+    "programmer": "ArduinoISP.org",
     "board": "arduino:avr:uno",
     "port": "COM6",
     "sketch": "ProjModeuls\\main\\main.ino"
