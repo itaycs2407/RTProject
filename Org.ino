@@ -1,4 +1,3 @@
-
 #include <SoftwareSerial.h>
 
 SoftwareSerial SIM900SSender(2, 3);

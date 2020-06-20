@@ -1,6 +1,6 @@
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
-//__attribute__((optimize("O0")))
+__attribute__((optimize("O0")))
 #pragma region module setup
 
 // LCD settings.
@@ -31,7 +31,7 @@ uint8_t counter = 0;
 uint8_t msgCounter = 1;
 uint8_t actionToPreform = 1;
 byte isMessageOK = 0;
-byte answerToreturnIfGotSafteyKey = 0;
+byte answerToReturnIfGotSafteyKey = 0;
 long currentMillis = 0;
 long startOfWaitingTime = 0;
 
@@ -43,12 +43,10 @@ bool childrenDetedtedWhileWaiting = false;
 
 void setup()
 {
-
   initilaizeLeds();
   SIM900power();
   //lcd setup
   lcd.begin(16, 2);
-
   SendMessageToScreenWithOutClear("Car is running    ", 0, 0);
   Serial.begin(9600);
 
@@ -58,7 +56,7 @@ void setup()
     delay(1);
   }
 
-  delay(3000);
+  delay(2000);
   CarShutdown();
   SIMCardInit();
   SendMessageToScreenWithOutClear("initializing...  ", 0, 0);
@@ -77,7 +75,7 @@ void setup()
   delay(2000);
   childrenDetedtedWhileWaiting = false;
   startOfWaitingTime = millis();
-  currentMillis = startOfWaitingTime;
+  currentMillis = millis();
   while (!(childrenDetedtedWhileWaiting) && (currentMillis - timeToTakeChildrenOutFromTheCar) <= startOfWaitingTime)
   {
     if (digitalRead(0) == HIGH)
@@ -98,7 +96,6 @@ void setup()
     ChildrenDetedted();
   }
 
-  //childrenTrapped = childrenDetedtedWhileWaiting;
   startOfWaitingTime = 0;
   currentMillis = 0;
 
@@ -110,8 +107,8 @@ void setup()
       in the original it was array of 10 string, each represnting message in escalading order. 
       because of the Arduino's memory problem, working with IF stracture.
     */
-    digitalWrite(9, HIGH);
-    delay(1500);
+    //digitalWrite(9, HIGH);
+    //delay(1500);
     if (msgCounter <= 3)
     {
       tempMsgToSMS = "Check childeren out from the car!! message # " + String(msgCounter);
@@ -146,7 +143,6 @@ void setup()
     noAnswer = true;
     startOfWaitingTime = millis();
     digitalWrite(8, HIGH);
-
     isMessageOK = getSMS();
     digitalWrite(8, LOW);
     /*
@@ -169,17 +165,17 @@ void setup()
       if (actionToPreform == 1)
       {
         //SendMessageToScreen("Action :        ", 0, 0);
-        SendMessageToScreenWithOutClear("Open car Windows", 1, 0);
+        SendMessageToScreen("Open car Windows", 1, 0);
       }
       else if (actionToPreform == 2)
       {
         //SendMessageToScreen("Action :        ", 0, 0);
-        SendMessageToScreenWithOutClear("Hazard lights On  ?", 01, 0);
+        SendMessageToScreen("Hazard lights On", 01, 0);
       }
       else if (actionToPreform == 3)
       {
         //SendMessageToScreen("Action :        ", 0, 0);
-        SendMessageToScreenWithOutClear("Start Horn      ", 1, 0);
+        SendMessageToScreen("Start Horn      ", 1, 0);
       }
       else
       {
@@ -188,7 +184,7 @@ void setup()
       delay(1500);
       actionToPreform++;
     }
-    else if (validmsg)
+    else
     {
       childrenDetedtedWhileWaiting = false;
     }
@@ -206,19 +202,18 @@ void CarShutdown()
   // send massage to screen - the shutdown
   digitalWrite(13, HIGH);
   SendMessageToScreen("car shutdown !   ", 0, 0);
-  delay(1500);
   //SendMessageToScreenWithOutClear("initializing.   ", 1, 0);
-  delay(1500);
+  delay(1000);
   lcd.clear();
 }
 void SystemShutdown()
 {
   SendMessageToScreen("No children      ", 0, 0);
   delay(2000);
-  //digitalWrite(9, LOW);
-  delay(2000);
+  digitalWrite(9, LOW);
+  delay(1500);
   SendMessageToScreen("Starting shutdown", 0, 0);
-  delay(2000);
+  delay(1500);
   SendMessageToScreen("Goodbye           ", 0, 0);
   delay(1500);
   digitalWrite(13, LOW);
@@ -226,7 +221,6 @@ void SystemShutdown()
 void ChildrenDetedted()
 {
   SendMessageToScreen("Children detected", 0, 0);
-  //SendMessageToScreenWithOutClear("detected         ", 1, 0);
   // digitalWrite(9, HIGH);
 }
 void SIMCardInit()
@@ -241,9 +235,9 @@ void SIMCardInit()
   SendMessageToScreen("initializing..    ", 0, 0);
   delay(300);
   lcd.clear();
-  Sender.begin(19200); // the GPRS baud rate
-  Reciver.begin(19200);
-  delay(1000);
+  //Sender.begin(19200); // the GPRS baud rate
+  //Reciver.begin(19200);
+  //delay(1000);
 }
 void SendMessageToScreen(String msg, int row, int col)
 {
@@ -271,40 +265,48 @@ void SendTextMessage(String msg, String phoneNumber)
   delay(100);
   Sender.println((char)26); //the ASCII code of the ctrl+z is 26
   delay(100);
+
   Sender.println();
+  delay(2000);
+  Reciver.println();
 }
 uint8_t getSMS()
 {
   validmsg = false;
   SIM900power();
-  delay(2000);
-  while (noAnswer && !answerToreturnIfGotSafteyKey)
+  while (noAnswer && !answerToReturnIfGotSafteyKey)
   {
     newString = "";
-    delay(500);
+    //delay(500);
     counter = 0;
     while (Reciver.available() > 0)
     {
       incoming_char = Reciver.read();
-      //digitalWrite(9, LOW);
+      Serial.print("from  while (Reciver.available() > 0) : ");
       Serial.println(incoming_char);
       buffer[counter++] = incoming_char;
     }
-    Reciver.println("AT +CMGD=1");
-    Sender.println("AT +CMGD=1");
-    delay(1500);
+    //Reciver.println("AT +CMGD=1");
+    //Sender.println("AT +CMGD=1");
+    delay(01500);
     uint8_t i;
+    Serial.println("form buffer : ");
     for (i = 0; i < counter; i++)
     {
       msg[i] = buffer[i];
+      Serial.print(buffer[i]);
     }
-    SendMessageToScreen(newString + "  ", 0, 0);
+    Serial.println();
+    //SendMessageToScreen(newString + "  ", 0, 0);
     delay(750);
-    delay(1500);
+    Serial.print("new string : ");
+    Serial.println(newString);
     SendMessageToScreen("msg:" + String(msg), 0, 0);
     delay(500);
+
     if (checkForStateCode(msg))
     {
+      Serial.println("in the found 972 : ");
       SendMessageToScreen("found 972", 0, 0);
       delay(500);
       msg[63] = '\0';
@@ -313,40 +315,45 @@ uint8_t getSMS()
       newString = newString.substring(newString.indexOf("\n", 10));
       newString = newString.substring(1);
       newString.trim();
-      answerToreturnIfGotSafteyKey = 0;
+      answerToReturnIfGotSafteyKey = 0;
       SendMessageToScreen("new:" + newString + "  ", 0, 0);
+      Serial.println("**** " + newString + " ****");
       delay(750);
       /*if (newString == "ok")
       {
-        answerToreturnIfGotSafteyKey = 1;
+        answerToReturnIfGotSafteyKey = 1;
         SendMessageToScreen("found OK !", 0, 0);
         delay(750);
-        return answerToreturnIfGotSafteyKey;
+        return answerToReturnIfGotSafteyKey;
       }
       else*/
+      Serial.println("detcting momo : " + newString);
       if (newString == "momo")
       {
-        answerToreturnIfGotSafteyKey = 1;
+        answerToReturnIfGotSafteyKey = 1;
         SendMessageToScreen("whats up momo ?!?", 0, 0);
         delay(750);
         validmsg = true;
-        return answerToreturnIfGotSafteyKey;
+        return 1;
       }
+
       delay(750);
       if (Reciver.read() > 0)
       {
+        Serial.println("in the Reciver.read");
         while (Reciver.read() > 0)
         {
           delay(1);
         }
       }
+
       for (i = 0; i < 64; i++)
       {
         msg[i] = '\0';
       }
     }
 
-    delay(1500);
+    delay(500);
     if (counter > 0)
     {
       for (i = 64; i > 0; i--)
@@ -356,14 +363,15 @@ uint8_t getSMS()
       counter = 0;
     }
     currentMillis = millis();
-    SendMessageToScreen("sowt :" + String(startOfWaitingTime), 0, 0);
-    SendMessageToScreenWithOutClear("cMillis :" + String(currentMillis), 1, 0);
+    //SendMessageToScreen("sowt :" + String(startOfWaitingTime), 0, 0);
+    //SendMessageToScreenWithOutClear("cMillis :" + String(currentMillis), 1, 0);
+    Serial.println("sowt :" + String(startOfWaitingTime) + " ,cMillis :" + String(currentMillis));
     delay(1000);
 
     if (currentMillis * 2 + waitingForAnswerTime < startOfWaitingTime)
     {
       startOfWaitingTime = currentMillis + waitingForAnswerTime;
-      SIM900power();
+      //SIM900power();
     }
 
     if ((currentMillis - waitingForAnswerTime) > startOfWaitingTime)
@@ -373,8 +381,8 @@ uint8_t getSMS()
   }
 
   delay(1000);
-  counter = 0;
-  return answerToreturnIfGotSafteyKey;
+  SIM900power();
+  return 0;
 }
 bool checkForStateCode(char msg[])
 {
@@ -382,7 +390,7 @@ bool checkForStateCode(char msg[])
   uint8_t i;
   for (i = 0; i < 62; i++)
   {
-    if (msg[i] == '2' && msg[i + 1] == '5' && msg[i + 2] == '8')
+    if (msg[i] == '9' && msg[i + 1] == '7' && msg[i + 2] == '2')
       return true;
   }
   return false;
@@ -396,7 +404,7 @@ void SIM900power()
   digitalWrite(9, HIGH);
   delay(1000);
   digitalWrite(9, LOW);
-  delay(7000);
+  delay(5000);
 }
 
 void initilaizeLeds()
